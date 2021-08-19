@@ -67,7 +67,7 @@ class Window(Frame):
         start_button = Button(self, text="Start", command=self.start_listening)
         start_button.pack(side=LEFT)
         stop_button = Button(self, text="Stop", command=self.stop_listening)
-        start_button.pack(side=RIGHT)
+        stop_button.pack(side=RIGHT)
 
         # Load a logo and resize it to 50%
         load = Image.open("img/RAFAC.jpg")
