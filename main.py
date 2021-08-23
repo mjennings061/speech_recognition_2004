@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
 import speech_recognition as sr
-import pyttsx3
 import time
 from tkinter import *
 from PIL import ImageTk, Image
 
-# TODO: Add a button to start and stop listening
 # TODO: Add keyword check in the loop
 # TODO: Add an alarm function with text to speech
 # TODO: Package as a self-contained app
@@ -19,9 +17,11 @@ class Listener:
         self.recogniser = sr.Recognizer()
         self.microphone = sr.Microphone()
 
-    # this is called from the background thread
     def audio_callback(self, recogniser, audio):
-        # received audio data, now we'll recognize it using Google Speech Recognition
+        """
+        Received audio data, now we'll recognize it using Google Speech Recognition
+        This is called from the background listen() function
+        """
         try:
             # for testing purposes, we're just using the default API key
             # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
@@ -34,49 +34,57 @@ class Listener:
             print(f"Could not request results from Google Speech Recognition service; {e}")
 
     def listen(self):
+        """Begin listening and performing speech to text"""
+        # open up the mic and adjust for the ambient noise
         with self.microphone as mic:
             self.recogniser.adjust_for_ambient_noise(mic, duration=0.2)
+        # start listening and create a method to stop listening at the same time
         self.stop_listening = self.recogniser.listen_in_background(
             mic, callback=self.audio_callback, phrase_time_limit=10
         )
 
     def stop_listening(self):
-        self.stop_listening(wait_for_stop=False)  # stop listening in the background
-        time.sleep(5)  # wait a few seconds before exiting
+        """Stop listening and wait until the process exits"""
+        try:
+            print("Stopping")
+            self.stop_listening(wait_for_stop=False)  # stop listening in the background
+            time.sleep(5)  # wait a few seconds before exiting
+            print("Stopped listening")
+        except TypeError:
+            print("Not currently listening")
 
 
-class Window(Frame):
-    def __init__(self, master=None):
-        # Speech to text component
+class MainFrame(Frame):
+    def __init__(self, master):
+        super().__init__(master)  # inherit properties from the original Frame class
         self.listen = Listener()
-
-        Frame.__init__(self, master)
-        self.master = master
-        # widget can take all window
-        self.pack(fill=BOTH, expand=1)
-
-        # create button, link to clickExitButton
-        exit_button = Button(self, text="Exit", command=self.exit_program)
-        exit_button.pack(side=BOTTOM)
+        # place the frame itself before the other objects within it
+        self.pack(side="top", fill="both", expand=True)
 
         # create a label
-        label = Label(master, text="Listen")
-        label.pack(side=TOP)
-
+        self.label = Label(self, text="Listen")
+        self.label.place(x=350, y=0)
         # start listening button
-        start_button = Button(self, text="Start", command=self.start_listening)
-        start_button.pack(side=LEFT)
-        stop_button = Button(self, text="Stop", command=self.stop_listening)
-        stop_button.pack(side=RIGHT)
+        self.start_button = Button(self, text="Start", width=30, command=self.start_listening)
+        self.start_button.place(x=0, y=450)
+        self.stop_button = Button(self, text="Stop", width=30, command=self.stop_listening)
+        self.stop_button.place(x=250, y=450)
+        # create button, link to clickExitButton
+        self.exit_button = Button(self, text="Exit", width=30, command=self.exit_program)
+        self.exit_button.place(x=500, y=450)
+        self.textbox = Text(self)
+        self.textbox.place(x=0, y=475, width=750)
 
         # Load a logo and resize it to 50%
         load = Image.open("img/RAFAC.jpg")
         scale = 0.5
         load = load.resize([int(scale * s) for s in load.size])
         render = ImageTk.PhotoImage(load)
-        img = Label(self, image=render)
-        img.image = render
-        img.pack(side=TOP)
+        self.img = Label(self, image=render)
+        self.img.image = render
+        self.img.place(x=100, y=0)
+
+        self.pack()
 
     def exit_program(self):
         exit()
@@ -88,16 +96,17 @@ class Window(Frame):
         self.listen.stop_listening()
 
 
-def gui():
-    root = Tk()
-    app = Window(root)
-    root.geometry("1200x800")
-    root.wm_title("Title")
-    root.mainloop()
+class SpeechApp(Tk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("750x750")
+        self.wm_title("2004 Speech Analyser")
 
 
 def main():
-    gui()
+    app = SpeechApp()
+    frame = MainFrame(app)
+    app.mainloop()
 
 
 # Press the green button in the gutter to run the script.
