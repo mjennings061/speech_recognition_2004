@@ -3,15 +3,26 @@
 import speech_recognition as sr
 import time
 from tkinter import *
+from tkinter import messagebox
 from PIL import ImageTk, Image
 
-# TODO: Add observer to output self.decoded_text from audio_callback to the text window
-# https://stackoverflow.com/questions/51885246/callback-on-variable-change-in-python
-# TODO: Add keyword check in the loop
 # TODO: Add an alarm function with text to speech
 # TODO: Package as a self-contained app
 # TODO: Add a radio feed as audio input to the GUI (select mic or radio)
 # TODO: Add an SDR as a possible input to the GUI
+
+
+class Colours:
+    """Data class to for printing"""
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 class Listener:
@@ -63,20 +74,36 @@ class Listener:
 
     @decoded_text.setter
     def decoded_text(self, new_text):
+        """Update the private variable with the new value and notify observers"""
         old_text = self._decoded_text
         self._decoded_text = new_text
         self._notify_observers(old_text, new_text)
 
     def _notify_observers(self, old_text, new_text):
+        """Notify any callbacks registered with the new value"""
         for callback in self._callbacks:
             callback(old_text, new_text)
 
     def register_callback(self, callback):
+        """Register a callback to be notified when decoded_text is updated"""
         self._callbacks.append(callback)
 
 
 class MainFrame(Frame):
+    """The main GUI class. Inherits from a TkInter frame"""
+    # keywords to trigger an alarm if detected from decoded text
+    KEYWORDS = [
+        "bomb",
+        "kill",
+        "execute",
+        "murder",
+        "assassinate",
+        "strike",
+        "purge",
+    ]
+
     def __init__(self, master):
+        """Initialise the object with a frame and GUI widgets"""
         super().__init__(master)  # inherit properties from the original Frame class
         # place the frame itself before the other objects within it
         self.pack(side="top", fill="both", expand=True)
@@ -94,7 +121,7 @@ class MainFrame(Frame):
         # create button, link to clickExitButton
         self.exit_button = Button(self, text="Exit", width=30, command=self.exit_program)
         self.exit_button.place(x=500, y=450)
-        self.output_text = "Press start to begin. Decoded text will be displayed here."
+        self.output_text = "Press start to begin. Decoded text will be displayed here.\n\n"
         self.output_box = Label(
             self, width=100, height=20,
             bg='#000', fg='#fff',
@@ -113,10 +140,28 @@ class MainFrame(Frame):
         self.img.image = render
         self.img.place(x=100, y=0)
 
+    def sound_alarm(self, word, phrase):
+        """Sound the alarm when word is said in a decoded phrase"""
+        messagebox.showwarning(
+            "Malicious phrase detected!",
+            f"Word:\n\n '{word}' \n\ndetected in phrase: \n\n'{phrase}'"
+        )
+
+    def check_for_keywords(self, phrase):
+        """Check for any keywords in a phrase"""
+        for keyword in self.KEYWORDS:
+            if phrase is not None and keyword in phrase:
+                return keyword
+
     def update_text(self, old_text, new_text):
-        """Update the text box with a new line of text"""
-        self.output_text += f"\n{new_text}"
-        self.output_box.configure(text=self.output_text)
+        """Update the text box with a new line of text and check for keywords"""
+        keyword_found = self.check_for_keywords(new_text)
+        if keyword_found is not None:
+            self.sound_alarm(keyword_found, new_text)
+            self.output_text += f"\nMALICIOUS PHRASE -->> {new_text} <<--"
+        else:
+            self.output_text += f"\n{new_text}"
+        self.output_box.config(text=self.output_text)
 
     def exit_program(self):
         """Exit the program with status 0"""
@@ -124,16 +169,20 @@ class MainFrame(Frame):
 
 
 class SpeechApp(Tk):
+    """Parent class of the application"""
     def __init__(self):
         super().__init__()
         self.geometry("750x750")
         self.wm_title("2004 Speech Analyser")
+        self.frame = MainFrame(self)
+
+    def start_app(self):
+        self.mainloop()
 
 
 def main():
     app = SpeechApp()
-    frame = MainFrame(app)
-    app.mainloop()
+    app.start_app()
 
 
 # Press the green button in the gutter to run the script.
