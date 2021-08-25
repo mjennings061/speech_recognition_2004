@@ -6,23 +6,9 @@ from tkinter import *
 from tkinter import messagebox
 from PIL import ImageTk, Image
 
-# TODO: Add an alarm function with text to speech
 # TODO: Package as a self-contained app
 # TODO: Add a radio feed as audio input to the GUI (select mic or radio)
 # TODO: Add an SDR as a possible input to the GUI
-
-
-class Colours:
-    """Data class to for printing"""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 
 class Listener:
