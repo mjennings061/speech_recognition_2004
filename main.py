@@ -5,6 +5,8 @@ import time
 from tkinter import *
 from PIL import ImageTk, Image
 
+# TODO: Add observer to output self.decoded_text from audio_callback to the text window
+# https://stackoverflow.com/questions/51885246/callback-on-variable-change-in-python
 # TODO: Add keyword check in the loop
 # TODO: Add an alarm function with text to speech
 # TODO: Package as a self-contained app
@@ -16,8 +18,10 @@ class Listener:
     def __init__(self):
         self.recogniser = sr.Recognizer()
         self.microphone = sr.Microphone()
+        self._decoded_text = ""
+        self._callbacks = []
 
-    def audio_callback(self, recogniser, audio):
+    def _audio_callback(self, recogniser, audio):
         """
         Received audio data, now we'll recognize it using Google Speech Recognition
         This is called from the background listen() function
@@ -26,8 +30,8 @@ class Listener:
             # for testing purposes, we're just using the default API key
             # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
             # instead of `r.recognize_google(audio)`
-            text = recogniser.recognize_google(audio, language="en-GB")
-            print(f"{time.clock_gettime(time.CLOCK_THREAD_CPUTIME_ID)}: {text}")
+            self.decoded_text = recogniser.recognize_google(audio, language="en-GB")
+            print(f"{time.clock_gettime(time.CLOCK_THREAD_CPUTIME_ID)}: {self.decoded_text}")
         except sr.UnknownValueError:
             print("Could not understand audio")
         except sr.RequestError as e:
@@ -40,7 +44,7 @@ class Listener:
             self.recogniser.adjust_for_ambient_noise(mic, duration=0.2)
         # start listening and create a method to stop listening at the same time
         self.stop_listening = self.recogniser.listen_in_background(
-            mic, callback=self.audio_callback, phrase_time_limit=10
+            mic, callback=self._audio_callback, phrase_time_limit=10
         )
 
     def stop_listening(self):
@@ -53,27 +57,52 @@ class Listener:
         except TypeError:
             print("Not currently listening")
 
+    @property
+    def decoded_text(self):
+        return self._decoded_text
+
+    @decoded_text.setter
+    def decoded_text(self, new_text):
+        old_text = self._decoded_text
+        self._decoded_text = new_text
+        self._notify_observers(old_text, new_text)
+
+    def _notify_observers(self, old_text, new_text):
+        for callback in self._callbacks:
+            callback(old_text, new_text)
+
+    def register_callback(self, callback):
+        self._callbacks.append(callback)
+
 
 class MainFrame(Frame):
     def __init__(self, master):
         super().__init__(master)  # inherit properties from the original Frame class
-        self.listen = Listener()
         # place the frame itself before the other objects within it
         self.pack(side="top", fill="both", expand=True)
+        self.listen = Listener()    # declare the listener object
+        self.listen.register_callback(self.update_text)
 
         # create a label
         self.label = Label(self, text="Listen")
         self.label.place(x=350, y=0)
         # start listening button
-        self.start_button = Button(self, text="Start", width=30, command=self.start_listening)
+        self.start_button = Button(self, text="Start", width=30, command=self.listen.listen)
         self.start_button.place(x=0, y=450)
-        self.stop_button = Button(self, text="Stop", width=30, command=self.stop_listening)
-        self.stop_button.place(x=250, y=450)
+        self.pause_button = Button(self, text="Pause", width=30, command=self.listen.stop_listening)
+        self.pause_button.place(x=250, y=450)
         # create button, link to clickExitButton
         self.exit_button = Button(self, text="Exit", width=30, command=self.exit_program)
         self.exit_button.place(x=500, y=450)
-        self.textbox = Text(self)
-        self.textbox.place(x=0, y=475, width=750)
+        self.output_text = "Press start to begin. Decoded text will be displayed here."
+        self.output_box = Label(
+            self, width=100, height=20,
+            bg='#000', fg='#fff',
+            justify="left", anchor="nw",
+            wraplength=750,
+            text=self.output_text
+        )
+        self.output_box.place(x=0, y=475, width=750)
 
         # Load a logo and resize it to 50%
         load = Image.open("img/RAFAC.jpg")
@@ -84,16 +113,14 @@ class MainFrame(Frame):
         self.img.image = render
         self.img.place(x=100, y=0)
 
-        self.pack()
+    def update_text(self, old_text, new_text):
+        """Update the text box with a new line of text"""
+        self.output_text += f"\n{new_text}"
+        self.output_box.configure(text=self.output_text)
 
     def exit_program(self):
+        """Exit the program with status 0"""
         exit()
-
-    def start_listening(self):
-        self.listen.listen()
-
-    def stop_listening(self):
-        self.listen.stop_listening()
 
 
 class SpeechApp(Tk):
