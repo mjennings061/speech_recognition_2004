@@ -5,9 +5,13 @@ import time
 from tkinter import *
 from tkinter import messagebox
 from PIL import ImageTk, Image
+# import vlc
 
-# TODO: Package as a self-contained app
-# TODO: Add a radio feed as audio input to the GUI (select mic or radio)
+# TODO: Add a radio station selector to the GUI
+# TODO: Add radio stream API call
+# TODO: Add a radio stream selector method into Listener to change audio input
+# TODO: Polish the GUI. Add indicators showing if active or inactive
+# TODO: Play the radio stream out of the speakers (loop-back)
 # TODO: Add an SDR as a possible input to the GUI
 
 
