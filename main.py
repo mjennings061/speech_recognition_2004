@@ -3,7 +3,7 @@
 import speech_recognition as sr
 import time
 from tkinter import *
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from PIL import ImageTk, Image
 # import vlc
 
@@ -11,7 +11,6 @@ from PIL import ImageTk, Image
 # TODO: Add radio stream API call
 # TODO: Add a radio stream selector method into Listener to change audio input
 # TODO: Polish the GUI. Add indicators showing if active or inactive
-# TODO: Play the radio stream out of the speakers (loop-back)
 # TODO: Add an SDR as a possible input to the GUI
 
 
@@ -78,6 +77,10 @@ class Listener:
         """Register a callback to be notified when decoded_text is updated"""
         self._callbacks.append(callback)
 
+    def _show_devices(self):
+        for index, name in enumerate(sr.Microphone.list_microphone_names()):
+            print(f"Mic name {name} found for 'Microphone(device_index={index})`")
+
 
 class MainFrame(Frame):
     """The main GUI class. Inherits from a TkInter frame"""
@@ -98,11 +101,9 @@ class MainFrame(Frame):
         # place the frame itself before the other objects within it
         self.pack(side="top", fill="both", expand=True)
         self.listen = Listener()    # declare the listener object
+        # self.listen.show_devices()
         self.listen.register_callback(self.update_text)
 
-        # create a label
-        self.label = Label(self, text="Listen")
-        self.label.place(x=350, y=0)
         # start listening button
         self.start_button = Button(self, text="Start", width=30, command=self.listen.listen)
         self.start_button.place(x=0, y=450)
@@ -130,6 +131,16 @@ class MainFrame(Frame):
         self.img.image = render
         self.img.place(x=100, y=0)
 
+        # dropdown menu
+        # TODO: add method to change radio when selected
+        radio_label = Label(self, text="Radio Station Selection")
+        radio_label.place(x=60, y=400)
+        radio_var = StringVar()
+        self.radio = ttk.Combobox(self, textvariable=radio_var, postcommand=self._change_station)
+        self.radio.bind('<<ComboboxSelected>>', self._change_station)
+        self.radio['values'] = ('BBC Radio 1', 'BBC Radio 2', 'BBC Radio 4')
+        self.radio.place(x=55, y=420)
+
     def sound_alarm(self, word, phrase):
         """Sound the alarm when word is said in a decoded phrase"""
         messagebox.showwarning(
@@ -152,6 +163,11 @@ class MainFrame(Frame):
         else:
             self.output_text += f"\n{new_text}"
         self.output_box.config(text=self.output_text)
+
+    def _change_station(self, event=None):
+        # TODO: change station callback when drop-down menu changes
+        self.radio_choice = self.radio.get()
+        print(f"Station is now {self.radio_choice}")
 
     def exit_program(self):
         """Exit the program with status 0"""
