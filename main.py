@@ -7,7 +7,6 @@ from tkinter import messagebox, ttk
 from PIL import ImageTk, Image
 import vlc
 
-# TODO: Add a radio station selector to the GUI
 # TODO: Add radio stream API call
 # TODO: Add a radio stream selector method into Listener to change audio input
 # TODO: Polish the GUI. Add indicators showing if active or inactive
@@ -40,6 +39,7 @@ class Listener:
         self.microphone = sr.Microphone()
         self._decoded_text = ""
         self._callbacks = []
+        self.media = vlc.MediaPlayer
 
     def _audio_callback(self, recogniser, audio):
         """
@@ -57,8 +57,12 @@ class Listener:
         except sr.RequestError as e:
             print(f"Could not request results from Google Speech Recognition service; {e}")
 
-    def listen(self):
+    def listen(self, url=None):
         """Begin listening and performing speech to text"""
+        if url is not None:
+            print(url)
+            self.media = vlc.MediaPlayer(url)
+            self.media.play()
         # open up the mic and adjust for the ambient noise
         with self.microphone as mic:
             self.recogniser.adjust_for_ambient_noise(mic, duration=0.2)
@@ -67,8 +71,9 @@ class Listener:
             mic, callback=self._audio_callback, phrase_time_limit=10
         )
 
-    def stop_listening(self):
+    def stop_listening(self, url=None):
         """Stop listening and wait until the process exits"""
+        self.media.pause()
         try:
             print("Stopping")
             self.stop_listening(wait_for_stop=False)  # stop listening in the background
@@ -125,9 +130,9 @@ class MainFrame(Frame):
         self.listen.register_callback(self.update_text)
 
         # start listening button
-        self.start_button = Button(self, text="Start", width=30, command=self.listen.listen)
+        self.start_button = Button(self, text="Start", width=30, command=self.start_listening)
         self.start_button.place(x=0, y=450)
-        self.pause_button = Button(self, text="Pause", width=30, command=self.listen.stop_listening)
+        self.pause_button = Button(self, text="Pause", width=30, command=self.stop_listening)
         self.pause_button.place(x=250, y=450)
         # create button, link to clickExitButton
         self.exit_button = Button(self, text="Exit", width=30, command=self.exit_program)
@@ -152,7 +157,6 @@ class MainFrame(Frame):
         self.img.place(x=100, y=0)
 
         # dropdown menu
-        # TODO: add method to change radio when selected
         radio_label = Label(self, text="Radio Station Selection")
         radio_label.place(x=60, y=400)
         radio_var = StringVar()
@@ -165,9 +169,13 @@ class MainFrame(Frame):
         #     station_names.append(station['name'])
         # assign the name of each station to the drop-down menu
         self.radio_choice = None
-        self.station_select['values'] = list(self.listen.STATIONS.keys())  # TODO: return as a list without dict_keys
+        self.station_select['values'] = list(self.listen.STATIONS.keys())
         print(f"{self.station_select['values']}")
         self.station_select.place(x=55, y=420)
+
+        self.on_off = Label(text="Listening",bg="green")
+        self.on_off.place(x=300, y=420)
+        self.on_off.place_forget()
 
     def sound_alarm(self, word, phrase):
         """Sound the alarm when word is said in a decoded phrase"""
@@ -193,7 +201,6 @@ class MainFrame(Frame):
         self.output_box.config(text=self.output_text)
 
     def _change_station(self, event=None):
-        # TODO: change station callback when drop-down menu changes
         station_name = self.station_select.get()    # get the station name from the drop-down menu
         for station in self.listen.STATIONS.keys():
             if station == station_name:
@@ -202,7 +209,28 @@ class MainFrame(Frame):
                 break
         if self.radio_choice is not None:
             # connect to a radio station and start playing
-            pass
+            self.listen.stop_listening(self.radio_choice['url'])
+            self.start_listening()
+
+    def start_listening(self):
+        self.on_off.place(x=300, y=420)
+        try:
+            if self.radio_choice['url'] is not None:
+                self.listen.listen(self.radio_choice['url'])
+            else:
+                self.listen.listen()
+        except TypeError:
+            self.listen.listen()
+
+    def stop_listening(self):
+        self.on_off.place_forget()
+        try:
+            if(self.radio_choice['url']) is not None:
+                self.listen.stop_listening(self.radio_choice['url'])
+            else:
+                self.listen.stop_listening()
+        except TypeError:
+            self.listen.stop_listening()
 
     def exit_program(self):
         """Exit the program with status 0"""
