@@ -5,7 +5,7 @@ import time
 from tkinter import *
 from tkinter import messagebox, ttk
 from PIL import ImageTk, Image
-# import vlc
+import vlc
 
 # TODO: Add a radio station selector to the GUI
 # TODO: Add radio stream API call
@@ -17,19 +17,19 @@ from PIL import ImageTk, Image
 class Listener:
     """Speech to text decoder using Google speech_recognition and vlc"""
     STATIONS = {
-        "BBCR1": {
+        "BBC_R1": {
             "name": "BBC Radio 1",
             "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one",
         },
-        "BBCR2": {
+        "BBC_R2": {
             "name": "BBC Radio 2",
             "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_two",
         },
-        "BBCR4": {
+        "BBC_R4": {
             "name": "BBC Radio 4",
             "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm",
         },
-        "BBCWS": {
+        "BBC_World_Service": {
             "name": "BBC World Service",
             "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
         },
@@ -160,10 +160,12 @@ class MainFrame(Frame):
         self.station_select.bind('<<ComboboxSelected>>', self._change_station)
         # self.radio['values'] = ('BBC Radio 1', 'BBC Radio 2', 'BBC Radio 4')
         # get the available stations and add them to the drop-down menu
-        station_names = []
-        for station in self.listen.STATIONS.values():
-            station_names.append(station['name'])
-        self.station_select['values'] = station_names    # assign the name of each station to the drop-down menu
+        # station_names = []
+        # for station in self.listen.STATIONS.values():
+        #     station_names.append(station['name'])
+        # assign the name of each station to the drop-down menu
+        self.radio_choice = None
+        self.station_select['values'] = list(self.listen.STATIONS.keys())  # TODO: return as a list without dict_keys
         print(f"{self.station_select['values']}")
         self.station_select.place(x=55, y=420)
 
@@ -192,8 +194,15 @@ class MainFrame(Frame):
 
     def _change_station(self, event=None):
         # TODO: change station callback when drop-down menu changes
-        self.radio_choice = self.radio.get()
-        print(f"Station is now {self.radio_choice}")
+        station_name = self.station_select.get()    # get the station name from the drop-down menu
+        for station in self.listen.STATIONS.keys():
+            if station == station_name:
+                self.radio_choice = self.listen.STATIONS[station]
+                print(f"Station changed to {self.radio_choice['name']}")
+                break
+        if self.radio_choice is not None:
+            # connect to a radio station and start playing
+            pass
 
     def exit_program(self):
         """Exit the program with status 0"""
