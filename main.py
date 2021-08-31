@@ -15,6 +15,26 @@ from PIL import ImageTk, Image
 
 
 class Listener:
+    """Speech to text decoder using Google speech_recognition and vlc"""
+    STATIONS = {
+        "BBCR1": {
+            "name": "BBC Radio 1",
+            "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one",
+        },
+        "BBCR2": {
+            "name": "BBC Radio 2",
+            "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_two",
+        },
+        "BBCR4": {
+            "name": "BBC Radio 4",
+            "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm",
+        },
+        "BBCWS": {
+            "name": "BBC World Service",
+            "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+        },
+    }
+
     def __init__(self):
         self.recogniser = sr.Recognizer()
         self.microphone = sr.Microphone()
@@ -136,10 +156,16 @@ class MainFrame(Frame):
         radio_label = Label(self, text="Radio Station Selection")
         radio_label.place(x=60, y=400)
         radio_var = StringVar()
-        self.radio = ttk.Combobox(self, textvariable=radio_var, postcommand=self._change_station)
-        self.radio.bind('<<ComboboxSelected>>', self._change_station)
-        self.radio['values'] = ('BBC Radio 1', 'BBC Radio 2', 'BBC Radio 4')
-        self.radio.place(x=55, y=420)
+        self.station_select = ttk.Combobox(self, textvariable=radio_var, postcommand=self._change_station)
+        self.station_select.bind('<<ComboboxSelected>>', self._change_station)
+        # self.radio['values'] = ('BBC Radio 1', 'BBC Radio 2', 'BBC Radio 4')
+        # get the available stations and add them to the drop-down menu
+        station_names = []
+        for station in self.listen.STATIONS.values():
+            station_names.append(station['name'])
+        self.station_select['values'] = station_names    # assign the name of each station to the drop-down menu
+        print(f"{self.station_select['values']}")
+        self.station_select.place(x=55, y=420)
 
     def sound_alarm(self, word, phrase):
         """Sound the alarm when word is said in a decoded phrase"""
